@@ -179,6 +179,80 @@ for (bname,aname,sname,elty) in ((:cusparseSbsrsm2_bufferSize, :cusparseSbsrsm2_
 end
 
 # csrsm2
+for (fname, elty) in ((:cusparseScsrsm2_bufferSizeExt, :Float32),
+                      (:cusparseDcsrsm2_bufferSizeExt, :Float64),
+                      (:cusparseCcsrsm2_bufferSizeExt, :ComplexF32),
+                      (:cusparseZcsrsm2_bufferSizeExt, :ComplexF64))
+    @eval begin
+        function csrsm2_bufferSizeExt(algo::Number, transa::SparseChar, transb::SparseChar,
+                                      A::CuSparseMatrixCSR{$elty}, B::CuMatrix{$elty},
+                                      alpha::Number, uplo::SparseChar, info::CuCsrsm2Info;
+                                      policy=CUSPARSE_SOLVE_POLICY_USE_LEVEL)
+            desc = CuMatrixDescriptor(CUSPARSE_MATRIX_TYPE_GENERAL, uplo,
+                                      CUSPARSE_DIAG_TYPE_NON_UNIT, 'O')
+
+            m = size(A, 1)
+            nrhs = transb == 'N' ? size(B, 2) : size(B, 1)
+
+            @argout($fname(handle(), algo, transa, transb, m, nrhs, nnz(A), alpha, desc,
+                           A.nzVal, A.rowPtr, A.colVal, B, size(B, 1), info, policy,
+                           out(Ref{Csize_t}())))[]
+        end
+    end
+end
+
+for (fname, elty) in ((:cusparseScsrsm2_analysis, :Float32),
+                      (:cusparseDcsrsm2_analysis, :Float64),
+                      (:cusparseCcsrsm2_analysis, :ComplexF32),
+                      (:cusparseZcsrsm2_analysis, :ComplexF64))
+    @eval begin
+        function csrsm2_analysis(algo::Number, transa::SparseChar, transb::SparseChar,
+                                 A::CuSparseMatrixCSR{$elty}, B::CuMatrix{$elty},
+                                 alpha::Number, uplo::SparseChar, info::CuCsrsm2Info;
+                                 policy=CUSPARSE_SOLVE_POLICY_USE_LEVEL)
+            desc = CuMatrixDescriptor(CUSPARSE_MATRIX_TYPE_GENERAL, uplo,
+                                      CUSPARSE_DIAG_TYPE_NON_UNIT, 'O')
+
+            m = size(A, 1)
+            nrhs = transb == 'N' ? size(B, 2) : size(B, 1)
+
+            buffer_size = csrsm2_bufferSizeExt(algo, transa, transb, A, B, alpha, uplo, info; policy)
+            @workspace size=buffer_size buffer -> begin
+                $fname(handle(), algo, transa, transb, m, nrhs, nnz(A), alpha, desc,
+                       A.nzVal, A.rowPtr, A.colVal, B, size(B, 1), info, policy, buffer)
+            end
+
+            info
+        end
+    end
+end
+
+for (fname, elty) in ((:cusparseScsrsm2_solve, :Float32),
+                      (:cusparseDcsrsm2_solve, :Float64),
+                      (:cusparseCcsrsm2_solve, :ComplexF32),
+                      (:cusparseZcsrsm2_solve, :ComplexF64))
+    @eval begin
+        function csrsm2_solve(algo::Number, transa::SparseChar, transb::SparseChar,
+                              A::CuSparseMatrixCSR{$elty}, B::CuMatrix{$elty},
+                              alpha::Number, uplo::SparseChar, info::CuCsrsm2Info;
+                              policy=CUSPARSE_SOLVE_POLICY_USE_LEVEL)
+            desc = CuMatrixDescriptor(CUSPARSE_MATRIX_TYPE_GENERAL, uplo,
+                                      CUSPARSE_DIAG_TYPE_NON_UNIT, 'O')
+
+            m = size(A, 1)
+            nrhs = transb == 'N' ? size(B, 2) : size(B, 1)
+
+            buffer_size = csrsm2_bufferSizeExt(algo, transa, transb, A, B, alpha, uplo, info; policy)
+            @workspace size=buffer_size buffer -> begin
+                $fname(handle(), algo, transa, transb, m, nrhs, nnz(A), alpha, desc,
+                       A.nzVal, A.rowPtr, A.colVal, B, size(B, 1), info, policy, buffer)
+            end
+
+            B
+        end
+    end
+end
+
 for (bname,aname,sname,elty) in ((:cusparseScsrsm2_bufferSizeExt, :cusparseScsrsm2_analysis, :cusparseScsrsm2_solve, :Float32),
                                  (:cusparseDcsrsm2_bufferSizeExt, :cusparseDcsrsm2_analysis, :cusparseDcsrsm2_solve, :Float64),
                                  (:cusparseCcsrsm2_bufferSizeExt, :cusparseCcsrsm2_analysis, :cusparseCcsrsm2_solve, :ComplexF32),

@@ -29,3 +29,28 @@ function CuMatrixDescriptor(MatrixType, FillMode, DiagType, IndexBase)
     end
     return desc
 end
+
+
+mutable struct CuCsrsv2Info
+    handle::csrsv2Info_t
+
+    function CuCsrsv2Info()
+        info = @argout cusparseCreateCsrsv2Info(out(Ref{csrsv2Info_t}()))
+        obj = new(info[])
+        finalizer(cusparseDestroyCsrsv2Info, obj)
+        obj
+    end
+end
+Base.unsafe_convert(::Type{csrsm2Info_t}, info::CuCsrsv2Info) = info.handle
+
+mutable struct CuCsrsm2Info
+    handle::csrsm2Info_t
+
+    function CuCsrsm2Info()
+        info = @argout cusparseCreateCsrsm2Info(out(Ref{csrsm2Info_t}()))
+        obj = new(info[])
+        finalizer(cusparseDestroyCsrsm2Info, obj)
+        obj
+    end
+end
+Base.unsafe_convert(::Type{csrsm2Info_t}, info::CuCsrsm2Info) = info.handle
